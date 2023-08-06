@@ -1,8 +1,6 @@
 package com.kindmz.smartphone.domain;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -18,7 +16,9 @@ public class Member {
     @GeneratedValue
     private Long index;
 
+    @Column(nullable = false)
     private String identity; // 아이디
+    @Column(nullable = false)
     private String nickname; // 닉네임
 
     private Integer level = 1;

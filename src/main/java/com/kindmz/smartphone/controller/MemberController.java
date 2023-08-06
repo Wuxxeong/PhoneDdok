@@ -8,22 +8,37 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Controller
+@RequestMapping("/members")
 public class MemberController {
 
     @Autowired
     private MemberService memberService;
 
     @PostMapping("/new")
-    private void createMember(@RequestBody Member member){
-        memberService.createMember(member.getIdentity(), member.getNickname());
+    private ResponseEntity<?> createMember(@RequestBody Member member){
+        Member newMember = memberService.createMember(member.getIdentity(), member.getNickname());
+        return newMember != null ?
+                new ResponseEntity<>(newMember, HttpStatus.CREATED) :
+                new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    }
+
+    @GetMapping("/all")
+    private ResponseEntity<?> getAllMembers(){
+        List<Member> members = memberService.getAllMembers();
+        return members.isEmpty() ?
+                new ResponseEntity<>(HttpStatus.NOT_FOUND) :
+                new ResponseEntity<>(members, HttpStatus.OK);
     }
 
     @GetMapping("/index/{index}")
     private ResponseEntity<?> getMemberByIndex(@PathVariable Long index){
         return memberExistResponse(memberService.getMemberByIndex(index));
     }
-    // 멤버를 찾아서 반환하는 형태는 반복되는 구문이므로, memeberExistResponse 메소드를 하단에 따로 분리하여 생성했음
+    // memberExistResponse는 해당 멤버가 존재하는지 확인하는 메소드.
+    // 멤버를 찾아서 반환하는 형태는 반복 사용되므로, 하단에 따로 분리하여 생성했음
 
     @GetMapping("/identity/{identity}")
     private ResponseEntity<?> getMemberByIdentity(@PathVariable String identity){

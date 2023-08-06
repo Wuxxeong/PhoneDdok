@@ -3,24 +3,32 @@ package com.kindmz.smartphone.service;
 import com.kindmz.smartphone.domain.Member;
 import com.kindmz.smartphone.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
+@Service
+@RequestMapping("/members")
 public class MemberService {
 
     @Autowired
     private MemberRepository memberRepository;
 
-    public void createMember(String identity, String nickname) {
-        Member newMember = new Member();
-        newMember.setIdentity(identity);
-        newMember.setNickname(nickname);
+    public Member createMember(String identity, String nickname) {
+        if (identity == null || nickname == null) return null;
+        Member member = new Member();
+        member.setIdentity(identity);
+        member.setNickname(nickname);
 
-        memberRepository.save(newMember);
+        memberRepository.save(member);
+        return member;
     }
 
     public Member getMemberByIdentity(String identity){ return memberRepository.findByIdentity(identity);    }
     public Member getMemberByIndex(Long index){ return memberRepository.findById(index).orElse(null); }
+    public List<Member> getAllMembers(){ return memberRepository.findAll(); }
 
     public Member levelUpMemberByIndex(Long index, Integer upLevel){
         Member member = getMemberByIndex(index);

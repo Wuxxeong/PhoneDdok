@@ -16,9 +16,9 @@ public class Member {
     @GeneratedValue
     private Long index;
 
-    @Column(nullable = false)
+//    @Column(nullable = false)
     private String identity; // 아이디
-    @Column(nullable = false)
+//    @Column(nullable = false)
     private String nickname; // 닉네임
 
     private Integer level = 1;

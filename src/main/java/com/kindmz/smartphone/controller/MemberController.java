@@ -2,70 +2,106 @@ package com.kindmz.smartphone.controller;
 
 import com.kindmz.smartphone.domain.Member;
 import com.kindmz.smartphone.service.MemberService;
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-@Controller
+@RestController
 @RequestMapping("/members")
 public class MemberController {
 
     @Autowired
     private MemberService memberService;
 
-    @PostMapping("/new")
-    private ResponseEntity<?> createMember(@RequestBody Member member){
-        Member newMember = memberService.createMember(member.getIdentity(), member.getNickname());
-        return newMember != null ?
-                new ResponseEntity<>(newMember, HttpStatus.CREATED) :
-                new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+    @PostMapping // 멤버 생성
+    public ResponseEntity<?> createMember(@RequestBody Member member) {
+        if (member.getIdentity() == null || member.getNickname() == null)
+            return new ResponseEntity<>("아이디/닉네임 입력되지 않음",HttpStatus.BAD_REQUEST);
+
+        boolean isMemberExist =
+                memberService.getMemberByIdentity(member.getIdentity()) != null ||
+                memberService.getMemberByNickname(member.getNickname()) != null;
+
+        return isMemberExist ?
+                new ResponseEntity<>("이미 존재하는 멤버", HttpStatus.BAD_REQUEST) :
+                new ResponseEntity<>(memberService.createMember(member), HttpStatus.CREATED);
     }
 
-    @GetMapping("/all")
-    private ResponseEntity<?> getAllMembers(){
-        List<Member> members = memberService.getAllMembers();
-        return members.isEmpty() ?
-                new ResponseEntity<>(HttpStatus.NOT_FOUND) :
-                new ResponseEntity<>(members, HttpStatus.OK);
+    @GetMapping // 멤버 조회 (전체 / 특정)
+    public ResponseEntity<?> getMembers(@RequestParam(value = "identity", required = false) String identity,
+                                        @RequestParam(value = "nickname", required = false) String nickname)
+    {
+        if (identity != null && nickname != null)
+            return new ResponseEntity<>("아이디와 닉네임 중 하나만 입력해주세요.", HttpStatus.BAD_REQUEST);
+        if (identity == null && nickname == null)
+            return new ResponseEntity<>(memberService.getAllMembers(), HttpStatus.OK); // 모든 계정 조회
+
+        Member member = memberService.getMemberByInfo(identity, nickname);
+        return member != null ? new ResponseEntity<>(member, HttpStatus.OK) : new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping("/index/{index}")
-    private ResponseEntity<?> getMemberByIndex(@PathVariable Long index){
-        return memberExistResponse(memberService.getMemberByIndex(index));
-    }
-    // memberExistResponse는 해당 멤버가 존재하는지 확인하는 메소드.
-    // 멤버를 찾아서 반환하는 형태는 반복 사용되므로, 하단에 따로 분리하여 생성했음
+    @GetMapping("/existence") // 멤버 존재 여부 조회 (특정)
+    public ResponseEntity<?> isMemberExist(@RequestParam(value = "identity", required = false) String identity,
+                                           @RequestParam(value = "nickname", required = false) String nickname)
+    {
+        if (identity == null && nickname == null)
+            return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
 
-    @GetMapping("/identity/{identity}")
-    private ResponseEntity<?> getMemberByIdentity(@PathVariable String identity){
-        return memberExistResponse(memberService.getMemberByIdentity(identity));
-    }
-
-    @PutMapping("/index/{index}/{upLevel}")
-    private ResponseEntity<?> levelUpMember(@PathVariable Long index, @PathVariable Integer upLevel){
-        return memberExistResponse(memberService.levelUpMemberByIndex(index, upLevel));
+        Map<String, Boolean> response = new HashMap<>();
+        if (identity != null)
+            response.put("identityExist", memberService.getMemberByIdentity(identity) != null);
+        if (nickname != null)
+            response.put("nicknameExist", memberService.getMemberByNickname(nickname) != null);
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
-    @DeleteMapping("/index/{index}")
-    private ResponseEntity<?> deleteMemberByIndex(@PathVariable Long index){
-        return memberExistResponse(memberService.deleteMemberByIndex(index));
+    @PutMapping // 멤버 업데이트
+    public ResponseEntity<?> updateMember(@RequestBody UpdateBody updateBody) {
+        String identity = updateBody.getIdentity();
+        String nickname = updateBody.getNickname();
+
+        if (identity != null && nickname != null)
+            return new ResponseEntity<>("아이디와 닉네임 중 하나만 입력해주세요.", HttpStatus.BAD_REQUEST);
+        if (identity == null && nickname == null)
+            return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
+
+        Member member = memberService.getMemberByInfo(identity, nickname);
+        if (member == null) {return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);}
+
+        // TODO: updateBody에 내용을 추가하여, 각 내용당 처리할 내용을 처리해주어야 함.
+        if (updateBody.getLevelUp() != 0){
+            memberService.levelUpByMember(member, updateBody.getLevelUp());
+        }
+
+        return new ResponseEntity<>(member, HttpStatus.OK);
     }
 
-    @DeleteMapping("/identity/{identity}")
-    private ResponseEntity<?> deleteMemberByIdentity(@PathVariable String identity){
-        return memberExistResponse(memberService.deleteMemberByIdentity(identity));
+    @DeleteMapping
+    public ResponseEntity<?> deleteMember(@RequestParam(value = "identity", required = false) String identity,
+                                          @RequestParam(value = "nickname", required = false) String nickname)
+    {
+        if (identity != null && nickname != null)
+            return new ResponseEntity<>("아이디와 닉네임 중 하나만 입력해주세요.", HttpStatus.BAD_REQUEST);
+        if (identity == null && nickname == null)
+            return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
+
+        Member member = memberService.getMemberByInfo(identity, nickname);
+        if (member == null) {return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);}
+
+        return new ResponseEntity<>(memberService.deleteMemberByMember(member), HttpStatus.OK);
     }
 
-    private ResponseEntity<?> memberExistResponse(Member member){
-        return member != null ?
-                new ResponseEntity<Member>(member, HttpStatus.OK) :
-                new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    @Getter @Setter
+    public static class UpdateBody {
+        private String identity = null;
+        private String nickname = null;
+        private int levelUp = 0;
     }
-
-
-
 }

@@ -16,28 +16,28 @@ public class MemberService {
     @Autowired
     private MemberRepository memberRepository;
 
-    public Member createMember(String identity, String nickname) {
-        if (identity == null || nickname == null) return null;
-        Member member = new Member();
-        member.setIdentity(identity);
-        member.setNickname(nickname);
-
-        memberRepository.save(member);
-        return member;
+    // CREATE 영역
+    public Member createMember(Member member) {
+        return memberRepository.save(member);
     }
 
-    public Member getMemberByIdentity(String identity){ return memberRepository.findByIdentity(identity);    }
-    public Member getMemberByIndex(Long index){ return memberRepository.findById(index).orElse(null); }
+    // READ 영역
+    public Member getMemberByIdentity(String identity) { return memberRepository.findByIdentity(identity); }
+    public Member getMemberByNickname(String nickname) { return memberRepository.findByNickname(nickname); }
     public List<Member> getAllMembers(){ return memberRepository.findAll(); }
-
-    public Member levelUpMemberByIndex(Long index, Integer upLevel){
-        Member member = getMemberByIndex(index);
-        if (member != null) { member.setLevel(member.getLevel() + upLevel); }
-        return member;
+    public Member getMemberByInfo(String identity, String nickname){
+        return identity != null ? memberRepository.findByIdentity(identity) : memberRepository.findByNickname(nickname);
     }
 
-    public Member deleteMemberByIndex(Long index){ return clearMember(getMemberByIndex(index)); }
-    public Member deleteMemberByIdentity(String identity){ return clearMember(getMemberByIdentity(identity)); }
+    // UPDATE 영역
+    public void levelUpByMember(Member member, Integer upLevel){
+//        Integer changedLevel = member.getLevel() + upLevel; // 그냥 바로 넣으면 반영이 안되길래 이렇게 수정해봤습니다.
+        member.setLevel(member.getLevel() + upLevel);
+        memberRepository.save(member);
+    }
+
+    // DELETE 영역
+    public Member deleteMemberByMember(Member member){ return clearMember(member); }
 
 
     public Member clearMember(Member member){
@@ -48,6 +48,7 @@ public class MemberService {
 
         member.setAction("삭제됨");
         member.setDeletedTime(LocalDateTime.now());
+        memberRepository.save(member);
         return member;
     }
 

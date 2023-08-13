@@ -1,6 +1,7 @@
 package com.kindmz.smartphone.controller;
 
 import com.kindmz.smartphone.domain.Member;
+import com.kindmz.smartphone.dto.MemberDTO;
 import com.kindmz.smartphone.service.MemberService;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,87 +22,110 @@ public class MemberController {
     private MemberService memberService;
 //POST------------------------------------------------------------------------------
     @PostMapping // 멤버 생성
-    public ResponseEntity<?> createMember(@RequestBody Member member) {
-        if (member.getIdentity() == null || member.getNickname() == null)
-            return new ResponseEntity<>("아이디/닉네임 입력되지 않음",HttpStatus.BAD_REQUEST);
+    public ResponseEntity<?> createMember(@RequestBody MemberDTO memberDTO) {
+        if (memberDTO.getIdentity() == null || memberDTO.getNickname() == null)
+            return new ResponseEntity<>("아이디/닉네임 입력되지 않음", HttpStatus.BAD_REQUEST);
 
         boolean isMemberExist =
-                memberService.getMemberByIdentity(member.getIdentity()) != null ||
-                memberService.getMemberByNickname(member.getNickname()) != null;
+                memberService.getMemberByIdentity(memberDTO.getIdentity()) != null ||
+                        memberService.getMemberByNickname(memberDTO.getNickname()) != null;
 
-        return isMemberExist ?
-                new ResponseEntity<>("이미 존재하는 멤버", HttpStatus.BAD_REQUEST) :
-                new ResponseEntity<>(memberService.createMember(member), HttpStatus.CREATED);
+        if (isMemberExist) {
+            return new ResponseEntity<>("이미 존재하는 멤버", HttpStatus.BAD_REQUEST);
+        } else {
+            return new ResponseEntity<>(memberService.createMember(memberDTO), HttpStatus.CREATED);
+        }
     }
 
     @PostMapping("/favorites") // 즐겨찾기 추가
     public ResponseEntity<?> addFavorites(@RequestParam String identity, @RequestParam List<Long> features) {
-        Member member = memberService.getMemberByIdentity(identity);
-        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+        MemberDTO memberDTO = memberService.getMemberByIdentity(identity);
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
 
-        memberService.addFavorites(member, features);
-        return new ResponseEntity<>(member, HttpStatus.OK);
+        memberService.addFavorites(memberDTO, features);
+        return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
     @PostMapping("/finish") // 공부한 기능 추가
     public ResponseEntity<?> addFinished(@RequestParam String identity, @RequestParam List<Long> features) {
-        Member member = memberService.getMemberByIdentity(identity);
-        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+        MemberDTO memberDTO = memberService.getMemberByIdentity(identity);
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
 
-        memberService.addFinished(member, features);
-        return new ResponseEntity<>(member, HttpStatus.OK);
+        memberService.addFinished(memberDTO, features);
+        return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
 //GET------------------------------------------------------------------------------
     @GetMapping // 멤버 조회 (전체 / 특정)
     public ResponseEntity<?> getMembers(@RequestParam(value = "identity", required = false) String identity,
-                                        @RequestParam(value = "nickname", required = false) String nickname)
-    {
-        if (identity != null && nickname != null)
+                                    @RequestParam(value = "nickname", required = false) String nickname) {
+        if (identity != null && nickname != null) {
             return new ResponseEntity<>("아이디와 닉네임 중 하나만 입력해주세요.", HttpStatus.BAD_REQUEST);
-        if (identity == null && nickname == null)
-            return new ResponseEntity<>(memberService.getAllMembers(), HttpStatus.OK); // 모든 계정 조회
+        }
 
-        Member member = memberService.getMemberByInfo(identity, nickname);
-        return member != null ? new ResponseEntity<>(member, HttpStatus.OK) : new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);
-    }
+        if (identity == null && nickname == null) {
+            List<MemberDTO> memberDTOs = memberService.getAllMembers();
+            return new ResponseEntity<>(memberDTOs, HttpStatus.OK); // 모든 계정 조회
+        }
 
+        MemberDTO memberDTO = memberService.getMemberByInfo(identity, nickname);
+        if (memberDTO != null) {
+            return new ResponseEntity<>(memberDTO, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
+    }//바꿈
     @GetMapping("/{id}") // 멤버 조회 (인덱스 이용)
-    public ResponseEntity<?> getMembers(@PathVariable Long id)
-    {
-        Member member = memberService.getMemberById(id);
-        return member != null ? new ResponseEntity<>(member, HttpStatus.OK) : new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);
+    public ResponseEntity<?> getMemberById(@PathVariable Long id) {
+        MemberDTO memberDTO = memberService.getMemberById(id);
+        if (memberDTO != null) {
+            return new ResponseEntity<>(memberDTO, HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
     }
 
-    @GetMapping("/existence") // 멤버 존재 여부 조회
+    @GetMapping("/existence") // 멤버 존재 여부 조회 (특정)
     public ResponseEntity<?> isMemberExist(@RequestParam(value = "identity", required = false) String identity,
-                                           @RequestParam(value = "nickname", required = false) String nickname)
-    {
-        if (identity == null && nickname == null)
+                                           @RequestParam(value = "nickname", required = false) String nickname) {
+        if (identity == null && nickname == null) {
             return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
+        }
 
         Map<String, Boolean> response = new HashMap<>();
-        if (identity != null)
+        if (identity != null) {
             response.put("identityExist", memberService.getMemberByIdentity(identity) != null);
-        if (nickname != null)
+        }
+        if (nickname != null) {
             response.put("nicknameExist", memberService.getMemberByNickname(nickname) != null);
+        }
         return new ResponseEntity<>(response, HttpStatus.OK);
-    }
+    }//바꿈
 
     @GetMapping("/favorites") // 즐겨찾기 조회 - List<Long> 반환
     public ResponseEntity<?> getFavorites(@RequestParam String identity) {
-        Member member = memberService.getMemberByIdentity(identity);
-        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+        MemberDTO memberDTO = memberService.getMemberByIdentity(identity);
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
 
-        return new ResponseEntity<>(memberService.getFavorites(member), HttpStatus.OK);
+        List<Long> favorites = memberService.getFavorites(memberDTO);
+        return new ResponseEntity<>(favorites, HttpStatus.OK);
     }
 
     @GetMapping("/finish") // 즐겨찾기 조회 - List<Long> 반환
     public ResponseEntity<?> getFinished(@RequestParam String identity) {
-        Member member = memberService.getMemberByIdentity(identity);
-        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+        MemberDTO memberDTO = memberService.getMemberByIdentity(identity);
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
 
-        return new ResponseEntity<>(memberService.getFinished(member), HttpStatus.OK);
+        List<Long> finished = memberService.getFinished(memberDTO);
+        return new ResponseEntity<>(finished, HttpStatus.OK);
     }
 
 
@@ -111,59 +135,73 @@ public class MemberController {
         String identity = updateBody.getIdentity();
         String nickname = updateBody.getNickname();
 
-        if (identity != null && nickname != null)
+        if (identity != null && nickname != null) {
             return new ResponseEntity<>("아이디와 닉네임 중 하나만 입력해주세요.", HttpStatus.BAD_REQUEST);
-        if (identity == null && nickname == null)
-            return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
-
-        Member member = memberService.getMemberByInfo(identity, nickname);
-        if (member == null) {return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);}
-
-        // TODO: updateBody에 내용을 추가하여, 각 내용당 처리할 내용을 처리해주어야 함.
-        if (updateBody.getLevelUp() != 0){
-            memberService.levelUpByMember(member, updateBody.getLevelUp());
         }
 
-        return new ResponseEntity<>(member, HttpStatus.OK);
+        if (identity == null && nickname == null) {
+            return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
+        }
+
+        MemberDTO memberDTO = memberService.getMemberByInfo(identity, nickname);
+
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
+
+        if (updateBody.getLevelUp() != 0) {
+            memberService.levelUpByMember(memberDTO, updateBody.getLevelUp());
+        }
+
+        return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
-
-//DELETE------------------------------------------------------------------------------
-    @DeleteMapping // 멤버 삭제(초기화)
+    //DELETE------------------------------------------------------------------------------
+    @DeleteMapping
     public ResponseEntity<?> deleteMember(@RequestParam(value = "identity", required = false) String identity,
-                                          @RequestParam(value = "nickname", required = false) String nickname)
-    {
-        if (identity != null && nickname != null)
+                                          @RequestParam(value = "nickname", required = false) String nickname) {
+        if (identity != null && nickname != null) {
             return new ResponseEntity<>("아이디와 닉네임 중 하나만 입력해주세요.", HttpStatus.BAD_REQUEST);
-        if (identity == null && nickname == null)
+        }
+
+        if (identity == null && nickname == null) {
             return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
+        }
 
-        Member member = memberService.getMemberByInfo(identity, nickname);
-        if (member == null) {return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);}
+        MemberDTO memberDTO = memberService.getMemberByInfo(identity, nickname);
 
-        return new ResponseEntity<>(memberService.deleteMemberByMember(member), HttpStatus.OK);
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
+
+        MemberDTO deletedMember = memberService.deleteMemberByMember(memberDTO);
+
+        return new ResponseEntity<>(deletedMember, HttpStatus.OK);
     }
 
     @DeleteMapping("/favorites") // 즐겨찾기 삭제
     public ResponseEntity<?> deleteFavorites(@RequestParam String identity, @RequestParam List<Long> features) {
-        Member member = memberService.getMemberByIdentity(identity);
-        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+        MemberDTO memberDTO = memberService.getMemberByIdentity(identity);
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
 
-        memberService.deleteFavorites(member, features);
-        return new ResponseEntity<>(member, HttpStatus.OK);
+        memberService.deleteFavorites(memberDTO, features);
+        return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
     @DeleteMapping("/finish") // 공부한 기능 삭제
     public ResponseEntity<?> deleteFinished(@RequestParam String identity, @RequestParam List<Long> features) {
-        Member member = memberService.getMemberByIdentity(identity);
-        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+        MemberDTO memberDTO = memberService.getMemberByIdentity(identity);
+        if (memberDTO == null) {
+            return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
+        }
 
-        memberService.deleteFinished(member, features);
-        return new ResponseEntity<>(member, HttpStatus.OK);
+        memberService.deleteFinished(memberDTO, features);
+        return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
-
-//------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------
     @Getter @Setter
     public static class UpdateBody {
         private String identity = null;

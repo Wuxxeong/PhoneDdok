@@ -1,6 +1,8 @@
 package com.kindmz.smartphone.service;
 
 import com.kindmz.smartphone.domain.Member;
+import com.kindmz.smartphone.dto.MemberDTO;
+import com.kindmz.smartphone.mapper.MemberMapper;
 import com.kindmz.smartphone.repository.MemberRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -15,56 +17,104 @@ public class MemberService {
 
     @Autowired
     private MemberRepository memberRepository;
-
+    @Autowired
+    private MemberMapper memberMapper;
 //CREATE------------------------------------------------------------------------------
-    public Member createMember(Member member) {
-        return memberRepository.save(member);
+    public MemberDTO createMember(MemberDTO memberDTO) {
+        Member member = memberMapper.toEntity(memberDTO);
+        member = memberRepository.save(member);
+        return memberMapper.toDTO(member);
     }
-
-    public Member addFavorites(Member member, List<Long> features) {
+    public MemberDTO addFavorites(MemberDTO memberDTO, List<Long> features) {
+        Member member = memberMapper.toEntity(memberDTO);
         member.getFavorites().addAll(features);
-        return memberRepository.save(member);
+        member = memberRepository.save(member);
+        return memberMapper.toDTO(member);
     }
 
-    public Member addFinished(Member member, List<Long> features) {
+    public MemberDTO addFinished(MemberDTO memberDTO, List<Long> features) {
+        Member member = memberMapper.toEntity(memberDTO);
         member.getFinished().addAll(features);
-        return memberRepository.save(member);
+        member = memberRepository.save(member);
+        return memberMapper.toDTO(member);
     }
 
 
 //READ------------------------------------------------------------------------------
-    public Member getMemberById(Long id) { return memberRepository.findById(id).orElse(null); }
-    public Member getMemberByIdentity(String identity) { return memberRepository.findByIdentity(identity); }
-    public Member getMemberByNickname(String nickname) { return memberRepository.findByNickname(nickname); }
-    public List<Member> getAllMembers(){ return memberRepository.findAll(); }
-    public Member getMemberByInfo(String identity, String nickname){
-        return identity != null ? memberRepository.findByIdentity(identity) : memberRepository.findByNickname(nickname);
+    public MemberDTO getMemberById(Long id) {
+        Member member = memberRepository.findById(id).orElse(null);
+        return member != null ? memberMapper.toDTO(member) : null;
+    }
+    public MemberDTO getMemberByIdentity(String identity) {
+        Member member = memberRepository.findByIdentity(identity);
+        return memberMapper.toDTO(member);
     }
 
-    public List<Long> getFavorites(Member member) { return member.getFavorites(); }
-    public List<Long> getFinished(Member member) { return member.getFinished(); }
+    public MemberDTO getMemberByNickname(String nickname) {
+        Member member = memberRepository.findByNickname(nickname);
+        return memberMapper.toDTO(member);
+    }
+    public List<MemberDTO> getAllMembers() {
+        List<Member> members = memberRepository.findAll();
+        return memberMapper.toDTOList(members);
+    }
+    public MemberDTO getMemberByInfo(String identity, String nickname) {
+        Member member = identity != null ? memberRepository.findByIdentity(identity) : memberRepository.findByNickname(nickname);
+        return memberMapper.toDTO(member);
+    }
+
+    public List<Long> getFavorites(MemberDTO memberDTO) {
+        Member member = memberMapper.toEntity(memberDTO);
+        return member.getFavorites();
+    }
+
+    public List<Long> getFinished(MemberDTO memberDTO) {
+        Member member = memberMapper.toEntity(memberDTO);
+        return member.getFinished();
+    }
+
 
 
 //UPDATE------------------------------------------------------------------------------
-    public void levelUpByMember(Member member, Integer upLevel){
-//        Integer changedLevel = member.getLevel() + upLevel; // 그냥 바로 넣으면 반영이 안되길래 이렇게 수정해봤습니다.
-        member.setLevel(member.getLevel() + upLevel);
-        memberRepository.save(member);
-    }
+    public MemberDTO levelUpByMember(MemberDTO memberDTO, Integer upLevel) {
+        Member member = memberRepository.findById(memberDTO.getId()).orElse(null);
 
+        if (member == null) {
+            return null; // 또는 예외 처리를 수행
+        }
+
+        member.setLevel(member.getLevel() + upLevel);
+        member = memberRepository.save(member);
+        return memberMapper.toDTO(member);
+    }
 
 //DELETE------------------------------------------------------------------------------
-    public Member deleteFavorites(Member member, List<Long> features) {
+    public MemberDTO deleteFavorites(MemberDTO memberDTO, List<Long> features) {
+        Member member = memberMapper.toEntity(memberDTO);
         member.getFavorites().removeAll(features);
-        return memberRepository.save(member);
+        member = memberRepository.save(member);
+        return memberMapper.toDTO(member);
     }
 
-    public Member deleteFinished(Member member, List<Long> features) {
+    public MemberDTO deleteFinished(MemberDTO memberDTO, List<Long> features) {
+        Member member = memberMapper.toEntity(memberDTO);
         member.getFinished().removeAll(features);
-        return memberRepository.save(member);
+        member = memberRepository.save(member);
+        return memberMapper.toDTO(member);
     }
 
-    public Member deleteMemberByMember(Member member){ return clearMember(member); }
+
+    public MemberDTO deleteMemberByMember(MemberDTO memberDTO) {
+        Member member = memberRepository.findById(memberDTO.getId()).orElse(null);
+
+        if (member == null) {
+            return null; // 또는 예외 처리를 수행
+        }
+
+        member = clearMember(member);
+        return memberMapper.toDTO(member);
+    }
+
 
     public Member clearMember(Member member){
         if (member == null) return null;

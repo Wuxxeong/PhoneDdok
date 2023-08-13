@@ -19,7 +19,7 @@ public class MemberController {
 
     @Autowired
     private MemberService memberService;
-
+//POST------------------------------------------------------------------------------
     @PostMapping // 멤버 생성
     public ResponseEntity<?> createMember(@RequestBody Member member) {
         if (member.getIdentity() == null || member.getNickname() == null)
@@ -34,6 +34,25 @@ public class MemberController {
                 new ResponseEntity<>(memberService.createMember(member), HttpStatus.CREATED);
     }
 
+    @PostMapping("/favorites") // 즐겨찾기 추가
+    public ResponseEntity<?> addFavorites(@RequestParam String identity, @RequestParam List<Long> features) {
+        Member member = memberService.getMemberByIdentity(identity);
+        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+
+        memberService.addFavorites(member, features);
+        return new ResponseEntity<>(member, HttpStatus.OK);
+    }
+
+    @PostMapping("/finish") // 공부한 기능 추가
+    public ResponseEntity<?> addFinished(@RequestParam String identity, @RequestParam List<Long> features) {
+        Member member = memberService.getMemberByIdentity(identity);
+        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+
+        memberService.addFinished(member, features);
+        return new ResponseEntity<>(member, HttpStatus.OK);
+    }
+
+//GET------------------------------------------------------------------------------
     @GetMapping // 멤버 조회 (전체 / 특정)
     public ResponseEntity<?> getMembers(@RequestParam(value = "identity", required = false) String identity,
                                         @RequestParam(value = "nickname", required = false) String nickname)
@@ -47,7 +66,7 @@ public class MemberController {
         return member != null ? new ResponseEntity<>(member, HttpStatus.OK) : new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);
     }
 
-    @GetMapping("/existence") // 멤버 존재 여부 조회 (특정)
+    @GetMapping("/existence") // 멤버 존재 여부 조회
     public ResponseEntity<?> isMemberExist(@RequestParam(value = "identity", required = false) String identity,
                                            @RequestParam(value = "nickname", required = false) String nickname)
     {
@@ -62,6 +81,24 @@ public class MemberController {
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
+    @GetMapping("/favorites") // 즐겨찾기 조회 - List<Long> 반환
+    public ResponseEntity<?> getFavorites(@RequestParam String identity) {
+        Member member = memberService.getMemberByIdentity(identity);
+        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+
+        return new ResponseEntity<>(memberService.getFavorites(member), HttpStatus.OK);
+    }
+
+    @GetMapping("/finish") // 즐겨찾기 조회 - List<Long> 반환
+    public ResponseEntity<?> getFinished(@RequestParam String identity) {
+        Member member = memberService.getMemberByIdentity(identity);
+        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+
+        return new ResponseEntity<>(memberService.getFinished(member), HttpStatus.OK);
+    }
+
+
+//PUT------------------------------------------------------------------------------
     @PutMapping // 멤버 업데이트
     public ResponseEntity<?> updateMember(@RequestBody UpdateBody updateBody) {
         String identity = updateBody.getIdentity();
@@ -83,7 +120,9 @@ public class MemberController {
         return new ResponseEntity<>(member, HttpStatus.OK);
     }
 
-    @DeleteMapping
+
+//DELETE------------------------------------------------------------------------------
+    @DeleteMapping // 멤버 삭제(초기화)
     public ResponseEntity<?> deleteMember(@RequestParam(value = "identity", required = false) String identity,
                                           @RequestParam(value = "nickname", required = false) String nickname)
     {
@@ -98,6 +137,26 @@ public class MemberController {
         return new ResponseEntity<>(memberService.deleteMemberByMember(member), HttpStatus.OK);
     }
 
+    @DeleteMapping("/favorites") // 즐겨찾기 삭제
+    public ResponseEntity<?> deleteFavorites(@RequestParam String identity, @RequestParam List<Long> features) {
+        Member member = memberService.getMemberByIdentity(identity);
+        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+
+        memberService.deleteFavorites(member, features);
+        return new ResponseEntity<>(member, HttpStatus.OK);
+    }
+
+    @DeleteMapping("/finish") // 공부한 기능 삭제
+    public ResponseEntity<?> deleteFinished(@RequestParam String identity, @RequestParam List<Long> features) {
+        Member member = memberService.getMemberByIdentity(identity);
+        if (member == null){ return new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND); }
+
+        memberService.deleteFinished(member, features);
+        return new ResponseEntity<>(member, HttpStatus.OK);
+    }
+
+
+//------------------------------------------------------------------------------
     @Getter @Setter
     public static class UpdateBody {
         private String identity = null;

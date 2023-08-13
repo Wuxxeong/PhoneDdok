@@ -6,6 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter @Setter
 @Entity
@@ -14,14 +16,17 @@ public class Member {
 
     @Id
     @GeneratedValue
-    private Long index;
+    private Long id;
 
-//    @Column(nullable = false)
     private String identity; // 아이디
-//    @Column(nullable = false)
     private String nickname; // 닉네임
 
     private Integer level = 1;
+
+    @ElementCollection
+    private List<Long> favorites = new ArrayList<>();
+    @ElementCollection
+    private List<Long> finished = new ArrayList<>();
 
     private LocalDateTime createdTime = LocalDateTime.now();
     private LocalDateTime deletedTime = null;

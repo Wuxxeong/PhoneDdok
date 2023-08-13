@@ -66,6 +66,13 @@ public class MemberController {
         return member != null ? new ResponseEntity<>(member, HttpStatus.OK) : new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);
     }
 
+    @GetMapping("/{id}") // 멤버 조회 (인덱스 이용)
+    public ResponseEntity<?> getMembers(@PathVariable Long id)
+    {
+        Member member = memberService.getMemberById(id);
+        return member != null ? new ResponseEntity<>(member, HttpStatus.OK) : new ResponseEntity<>("멤버가 발견되지 않음",HttpStatus.NOT_FOUND);
+    }
+
     @GetMapping("/existence") // 멤버 존재 여부 조회
     public ResponseEntity<?> isMemberExist(@RequestParam(value = "identity", required = false) String identity,
                                            @RequestParam(value = "nickname", required = false) String nickname)

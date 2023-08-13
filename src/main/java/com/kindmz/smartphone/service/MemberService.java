@@ -33,6 +33,7 @@ public class MemberService {
 
 
 //READ------------------------------------------------------------------------------
+    public Member getMemberById(Long id) { return memberRepository.findById(id).orElse(null); }
     public Member getMemberByIdentity(String identity) { return memberRepository.findByIdentity(identity); }
     public Member getMemberByNickname(String nickname) { return memberRepository.findByNickname(nickname); }
     public List<Member> getAllMembers(){ return memberRepository.findAll(); }

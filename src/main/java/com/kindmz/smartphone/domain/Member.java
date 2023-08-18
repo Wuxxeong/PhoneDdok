@@ -22,6 +22,7 @@ public class Member {
     private String nickname; // 닉네임
 
     private Integer level = 1;
+    private Integer phone;
 
     @ElementCollection
     private List<Long> favorites = new ArrayList<>();

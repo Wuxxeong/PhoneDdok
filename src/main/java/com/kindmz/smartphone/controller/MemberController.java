@@ -25,6 +25,8 @@ public class MemberController {
     public ResponseEntity<?> createMember(@RequestBody MemberDTO memberDTO) {
         if (memberDTO.getIdentity() == null || memberDTO.getNickname() == null)
             return new ResponseEntity<>("아이디/닉네임 입력되지 않음", HttpStatus.BAD_REQUEST);
+        if (memberDTO.getPhone() == null)
+            return new ResponseEntity<>("폰 종류 입력되지 않음. 갤럭시(1) 아이폰(2)", HttpStatus.BAD_REQUEST);
 
         boolean isMemberExist =
                 memberService.getMemberByIdentity(memberDTO.getIdentity()) != null ||
@@ -44,7 +46,7 @@ public class MemberController {
             return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
         }
 
-        memberService.addFavorites(memberDTO, features);
+        memberDTO = memberService.addFavorites(memberDTO, features);
         return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
@@ -55,7 +57,7 @@ public class MemberController {
             return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
         }
 
-        memberService.addFinished(memberDTO, features);
+        memberDTO = memberService.addFinished(memberDTO, features);
         return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
@@ -132,26 +134,33 @@ public class MemberController {
 //PUT------------------------------------------------------------------------------
     @PutMapping // 멤버 업데이트
     public ResponseEntity<?> updateMember(@RequestBody UpdateBody updateBody) {
-        String identity = updateBody.getIdentity();
-        String nickname = updateBody.getNickname();
+        List<MemberDTO> allMembers = memberService.getAllMembers();
 
-        if (identity != null && nickname != null) {
-            return new ResponseEntity<>("아이디와 닉네임 중 하나만 입력해주세요.", HttpStatus.BAD_REQUEST);
-        }
+        // 모든 멤버 객체의 레벨을 요청 본문에서 받은 레벨로 변경
+        allMembers.forEach(
+                memberDTO -> {
+                    MemberDTO updateMemberDTO = memberService.levelUpByMember(memberDTO, updateBody.getLevelUp());
+                    if (updateBody.getPhone() != null)
+                        memberService.updatePhoneByMember(updateMemberDTO, updateBody.getPhone());
+                }
+        );
 
-        if (identity == null && nickname == null) {
-            return new ResponseEntity<>("계정을 조회할 요소(아이디/닉네임)가 입력되지 않음", HttpStatus.BAD_REQUEST);
-        }
+        return new ResponseEntity<>(memberService.getAllMembers(), HttpStatus.OK);
+    }
 
-        MemberDTO memberDTO = memberService.getMemberByInfo(identity, nickname);
-
+    @PutMapping("/{id}") // 멤버 업데이트
+    public ResponseEntity<?> updateMember(@RequestBody UpdateBody updateBody, @RequestParam Long id) {
+        MemberDTO memberDTO = memberService.getMemberById(id);
         if (memberDTO == null) {
             return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
         }
 
         if (updateBody.getLevelUp() != 0) {
-            memberService.levelUpByMember(memberDTO, updateBody.getLevelUp());
+            memberDTO = memberService.levelUpByMember(memberDTO, updateBody.getLevelUp());
         }
+
+        if (updateBody.getPhone() != null)
+            memberDTO = memberService.updatePhoneByMember(memberDTO, updateBody.getPhone());
 
         return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
@@ -186,7 +195,7 @@ public class MemberController {
             return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
         }
 
-        memberService.deleteFavorites(memberDTO, features);
+        memberDTO = memberService.deleteFavorites(memberDTO, features);
         return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
@@ -197,7 +206,7 @@ public class MemberController {
             return new ResponseEntity<>("멤버가 발견되지 않음", HttpStatus.NOT_FOUND);
         }
 
-        memberService.deleteFinished(memberDTO, features);
+        memberDTO = memberService.deleteFinished(memberDTO, features);
         return new ResponseEntity<>(memberDTO, HttpStatus.OK);
     }
 
@@ -206,6 +215,7 @@ public class MemberController {
     public static class UpdateBody {
         private String identity = null;
         private String nickname = null;
-        private int levelUp = 0;
+        private Integer levelUp = 0;
+        private Integer phone;
     }
 }

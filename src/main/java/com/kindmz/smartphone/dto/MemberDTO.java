@@ -12,6 +12,7 @@ public class MemberDTO {
     private String identity;
     private String nickname;
     private Integer level;
+    private Integer phone;
     private List<Long> favorites;
     private List<Long> finished;
     private LocalDateTime createdTime;

@@ -9,7 +9,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequestMapping("/members")
@@ -22,20 +25,32 @@ public class MemberService {
 //CREATE------------------------------------------------------------------------------
     public MemberDTO createMember(MemberDTO memberDTO) {
         Member member = memberMapper.toEntity(memberDTO);
-        member = memberRepository.save(member);
+        member.setLevel(1);
+        member.setCreatedTime(LocalDateTime.now());
+        member.setAction("생성됨");
+        memberRepository.save(member);
         return memberMapper.toDTO(member);
     }
+
     public MemberDTO addFavorites(MemberDTO memberDTO, List<Long> features) {
         Member member = memberMapper.toEntity(memberDTO);
-        member.getFavorites().addAll(features);
-        member = memberRepository.save(member);
+
+        Set<Long> favoritesSet = new HashSet<>(member.getFavorites()); // 기존 즐겨찾기 목록을 Set으로 변환
+        favoritesSet.addAll(features);
+        member.setFavorites(new ArrayList<>(favoritesSet));
+
+        memberRepository.save(member);
         return memberMapper.toDTO(member);
     }
 
     public MemberDTO addFinished(MemberDTO memberDTO, List<Long> features) {
         Member member = memberMapper.toEntity(memberDTO);
-        member.getFinished().addAll(features);
-        member = memberRepository.save(member);
+
+        Set<Long> finishedSet = new HashSet<>(member.getFinished()); // 기존 즐겨찾기 목록을 Set으로 변환
+        finishedSet.addAll(features);
+        member.setFavorites(new ArrayList<>(finishedSet));
+
+        memberRepository.save(member);
         return memberMapper.toDTO(member);
     }
 
@@ -77,14 +92,26 @@ public class MemberService {
 
 //UPDATE------------------------------------------------------------------------------
     public MemberDTO levelUpByMember(MemberDTO memberDTO, Integer upLevel) {
-        Member member = memberRepository.findById(memberDTO.getId()).orElse(null);
+        Member member = memberMapper.toEntity(memberDTO);
 
         if (member == null) {
             return null; // 또는 예외 처리를 수행
         }
 
         member.setLevel(member.getLevel() + upLevel);
-        member = memberRepository.save(member);
+        memberRepository.save(member);
+        return memberMapper.toDTO(member);
+    }
+
+    public MemberDTO updatePhoneByMember(MemberDTO memberDTO, Integer phone) {
+        Member member = memberMapper.toEntity(memberDTO);
+
+        if (member == null) {
+            return null; // 또는 예외 처리를 수행
+        }
+
+        member.setPhone(phone);
+        memberRepository.save(member);
         return memberMapper.toDTO(member);
     }
 
@@ -92,14 +119,14 @@ public class MemberService {
     public MemberDTO deleteFavorites(MemberDTO memberDTO, List<Long> features) {
         Member member = memberMapper.toEntity(memberDTO);
         member.getFavorites().removeAll(features);
-        member = memberRepository.save(member);
+        memberRepository.save(member);
         return memberMapper.toDTO(member);
     }
 
     public MemberDTO deleteFinished(MemberDTO memberDTO, List<Long> features) {
         Member member = memberMapper.toEntity(memberDTO);
         member.getFinished().removeAll(features);
-        member = memberRepository.save(member);
+        memberRepository.save(member);
         return memberMapper.toDTO(member);
     }
 
@@ -111,13 +138,13 @@ public class MemberService {
             return null; // 또는 예외 처리를 수행
         }
 
-        member = clearMember(member);
+        clearMember(member);
         return memberMapper.toDTO(member);
     }
 
 
-    public Member clearMember(Member member){
-        if (member == null) return null;
+    public void clearMember(Member member){
+        if (member == null) return;
 
         member.setIdentity(null);
         member.setNickname(null);
@@ -125,7 +152,6 @@ public class MemberService {
         member.setAction("삭제됨");
         member.setDeletedTime(LocalDateTime.now());
         memberRepository.save(member);
-        return member;
     }
 
 
